@@ -14,6 +14,7 @@ A content triage service that classifies text submissions via an LLM (LiteLLM), 
 - **Observability**: Request/correlation ID (X-Request-ID), structured logging
 - **Input sanitization**: Submission text is stripped of leading/trailing whitespace and internal runs of spaces before triage
 - **Resilience**: Database failures return 503 with a safe message; no internal details leaked
+- **List submissions**: `GET /submissions/list?page=1&per_page=10` returns submissions in descending order; UI "View submissions" table with pagination; console `/list` and `/list 2` (page 2) show recent 10 as a table
 
 ## How to run
 
@@ -53,8 +54,8 @@ cd code
 ./run.sh -c    # Run interactive console (prompt for text, pipeline animation, result + JSON)
 ```
 
-- `**./run.sh -u**`: Serves API + Web UI at [http://localhost:8000](http://localhost:8000) (pipeline animation, formatted result, JSON; multiple submissions).
-- `**./run.sh -c**`: Interactive TRIAGE AGENT console (lime green banner); multiple submissions; pipeline steps and formatted result + JSON.
+- `**./run.sh -u**`: Serves API + Web UI at [http://localhost:8000](http://localhost:8000) (pipeline animation, formatted result, JSON; "View submissions" shows a paginated table of all submissions in descending order).
+- `**./run.sh -c**`: Interactive TRIAGE AGENT console (lime green banner); multiple submissions; pipeline steps and formatted result + JSON. Use `/list` for recent 10 submissions as a table, `/list 2` for next 10, etc.
 - **File mode (`-f`)**: Run manually when you want to triage a file once:
   ```bash
   cd code

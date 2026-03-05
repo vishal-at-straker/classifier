@@ -57,3 +57,23 @@ def get_submission_by_normalized_text(
 def get_submission_by_id(db: Session, submission_id: int) -> Submission | None:
     """Get submission by primary key."""
     return db.query(Submission).filter(Submission.id == submission_id).first()
+
+
+def list_submissions_paginated(
+    db: Session,
+    page: int = 1,
+    per_page: int = 10,
+) -> tuple[list[Submission], int]:
+    """
+    List submissions in descending order (newest first). Returns (items, total_count).
+    """
+    total = db.query(Submission).count()
+    offset = max(0, (page - 1) * per_page)
+    items = (
+        db.query(Submission)
+        .order_by(Submission.id.desc())
+        .offset(offset)
+        .limit(per_page)
+        .all()
+    )
+    return items, total

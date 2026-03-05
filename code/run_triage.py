@@ -118,16 +118,95 @@ def mode_file(args):
     print(json.dumps({"submission_id": sub_id, "message_id": msg_id, "result": result_dict}, indent=2))
 
 
+def run_list_submissions(page: int = 1, per_page: int = 10) -> tuple[list[dict], int]:
+    """Fetch paginated submissions (descending). Returns (items, total)."""
+    from src.crud.submissions import list_submissions_paginated
+    from src.db.session import get_session_factory
+
+    SessionLocal = get_session_factory()
+    db = SessionLocal()
+    try:
+        items, total = list_submissions_paginated(db, page=page, per_page=per_page)
+        rows = []
+        for s in items:
+            rows.append({
+                "id": s.id,
+                "text": (s.text or "")[:60] + ("…" if len(s.text or "") > 60 else ""),
+                "classification": s.classification or "",
+                "actionability": s.actionability or "",
+                "routing_destination": s.routing_destination or "",
+                "summary": (s.summary or "")[:40] + ("…" if len(s.summary or "") > 40 else ""),
+                "created_at": s.created_at.isoformat() if s.created_at else "",
+            })
+        return rows, total
+    finally:
+        db.close()
+
+
+def _print_submissions_table(rows: list[dict], total: int, page: int, per_page: int) -> None:
+    """Print submissions as a table. Uses rich if available."""
+    if not rows:
+        print("  No submissions.")
+        return
+    try:
+        from rich.console import Console
+        from rich.table import Table
+
+        console = Console()
+        t = Table(title=f"Submissions (newest first) — page {page}, total {total}")
+        t.add_column("ID", style="cyan")
+        t.add_column("Text", max_width=40, overflow="ellipsis")
+        t.add_column("Classification")
+        t.add_column("Actionability")
+        t.add_column("Routing")
+        t.add_column("Summary", max_width=35, overflow="ellipsis")
+        t.add_column("Created")
+        for r in rows:
+            t.add_row(
+                str(r["id"]),
+                r["text"],
+                r["classification"],
+                r["actionability"],
+                r["routing_destination"],
+                r["summary"],
+                r["created_at"][:19] if r["created_at"] else "",
+            )
+        console.print(t)
+    except ImportError:
+        # Plain text table
+        col = lambda v, w: (str(v)[:w] + "…" if len(str(v)) > w else str(v)).ljust(w)
+        w_id, w_text, w_cls, w_act, w_route, w_sum, w_created = 5, 42, 16, 12, 18, 38, 19
+        print("  " + col("ID", w_id) + col("Text", w_text) + col("Classification", w_cls) + col("Actionability", w_act) + col("Routing", w_route) + col("Summary", w_sum) + col("Created", w_created))
+        print("  " + "-" * (w_id + w_text + w_cls + w_act + w_route + w_sum + w_created))
+        for r in rows:
+            print("  " + col(r["id"], w_id) + col(r["text"], w_text) + col(r["classification"], w_cls) + col(r["actionability"], w_act) + col(r["routing_destination"], w_route) + col(r["summary"], w_sum) + col(r["created_at"][:19] if r["created_at"] else "", w_created))
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    print(f"  Page {page} of {total_pages} ({total} total). Use /list {page + 1} for next page.")
+
+
 def mode_console(args):
-    """-c: interactive loop, banner, pipeline steps, result + JSON, repeat."""
+    """-c: interactive loop, banner, pipeline steps, result + JSON, repeat. /list [N] shows recent submissions."""
     show_banner()
-    print("Enter text to triage (empty line or Ctrl+D to quit).\n")
+    print("Enter text to triage (empty line or Ctrl+D to quit).")
+    print("  /list       — show recent 10 submissions")
+    print("  /list 2     — show next 10 (page 2), etc.\n")
     while True:
         try:
             line = input("Text> ").strip()
         except EOFError:
             break
         if not line:
+            continue
+        # /list or /list N
+        if line.lower().startswith("/list"):
+            rest = line[5:].strip()
+            page = 1
+            if rest.isdigit():
+                page = max(1, int(rest))
+            per_page = 10
+            rows, total = run_list_submissions(page=page, per_page=per_page)
+            _print_submissions_table(rows, total, page, per_page)
+            print()
             continue
         print("Running triage…")
         result_dict, sub_id, msg_id = run_triage_with_progress(line, progress_callback=_print_step)

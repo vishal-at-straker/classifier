@@ -1,4 +1,6 @@
 """Pydantic schemas for submission API."""
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -28,3 +30,24 @@ class SubmissionResponse(BaseModel):
     submission_id: int | None
     message_id: int | None
     result: TriageResult
+
+
+class SubmissionListItem(BaseModel):
+    """Single row for GET /submissions/list."""
+
+    id: int
+    text: str
+    classification: str
+    actionability: str
+    routing_destination: str
+    summary: str
+    created_at: datetime
+
+
+class SubmissionListResponse(BaseModel):
+    """Paginated list of submissions (descending order)."""
+
+    items: list[SubmissionListItem]
+    total: int
+    page: int
+    per_page: int

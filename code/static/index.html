@@ -100,13 +100,53 @@
     .error {
       color: #f88;
     }
+    .nav-links { margin-bottom: 1rem; }
+    .nav-links a { color: var(--lime); margin-right: 1rem; }
+    .table-wrap { overflow-x: auto; margin-top: 1.5rem; max-width: 100%; }
+    table.submissions {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    table.submissions th, table.submissions td {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+    table.submissions th {
+      background: #1f1f1f;
+      color: var(--lime);
+      font-weight: 600;
+    }
+    table.submissions tr:hover { background: #2a2a2a; }
+    table.submissions .text-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pagination { margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .pagination button {
+      padding: 0.4rem 0.6rem;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid #444;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .pagination button:hover:not(:disabled) { border-color: var(--lime); color: var(--lime); }
+    .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pagination span { color: var(--muted); font-size: 0.9rem; }
+    #listSection { display: none; }
+    #listSection.visible { display: block; }
   </style>
 </head>
 <body>
   <header>
     <h1>TRIAGE AGENT</h1>
+    <div class="nav-links">
+      <a href="#" id="linkSubmit">Submit</a>
+      <a href="#" id="linkList">View submissions</a>
+    </div>
   </header>
-  <div class="container">
+  <div id="submitSection" class="container">
     <textarea id="input" placeholder="Paste or type text to triage…"></textarea>
     <button id="submit">Submit</button>
     <div class="pipeline" id="pipeline"></div>
@@ -114,12 +154,85 @@
     <div class="json-box" id="json" style="display:none;"></div>
     <div class="error" id="error" style="display:none;"></div>
   </div>
+  <div id="listSection" class="container">
+    <h2 style="color: var(--lime); font-size: 1.1rem;">Submissions (newest first)</h2>
+    <div class="table-wrap">
+      <table class="submissions" id="submissionsTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Text</th>
+            <th>Classification</th>
+            <th>Actionability</th>
+            <th>Routing</th>
+            <th>Summary</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody id="submissionsBody"></tbody>
+      </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+    <div class="error" id="listError" style="display:none;"></div>
+  </div>
   <script>
     const steps = ['Validating…', 'Idempotency', 'Empty check', 'Dedup', 'LLM', 'Routing', 'Done'];
     const pipelineEl = document.getElementById('pipeline');
     const resultEl = document.getElementById('result');
     const jsonEl = document.getElementById('json');
     const errorEl = document.getElementById('error');
+    let currentListPage = 1;
+    const perPage = 10;
+
+    function showSection(id) {
+      document.getElementById('submitSection').style.display = id === 'submitSection' ? 'block' : 'none';
+      document.getElementById('listSection').classList.toggle('visible', id === 'listSection');
+      if (id === 'listSection') loadList(1);
+    }
+    document.getElementById('linkSubmit').onclick = (e) => { e.preventDefault(); showSection('submitSection'); };
+    document.getElementById('linkList').onclick = (e) => { e.preventDefault(); showSection('listSection'); };
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+    function formatDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return d.toLocaleString();
+    }
+    async function loadList(page) {
+      currentListPage = page;
+      const body = document.getElementById('submissionsBody');
+      const paginationEl = document.getElementById('pagination');
+      const listError = document.getElementById('listError');
+      listError.style.display = 'none';
+      body.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
+      try {
+        const r = await fetch('/submissions/list?page=' + page + '&per_page=' + perPage);
+        const data = await r.json();
+        if (!r.ok) {
+          listError.textContent = data.detail || r.statusText;
+          listError.style.display = 'block';
+          body.innerHTML = '';
+          return;
+        }
+        const items = data.items || [];
+        const total = data.total || 0;
+        body.innerHTML = items.length === 0
+          ? '<tr><td colspan="7">No submissions yet.</td></tr>'
+          : items.map(s => '<tr><td>' + s.id + '</td><td class="text-cell" title="' + escapeHtml(s.text) + '">' + escapeHtml(s.text.length > 80 ? s.text.slice(0, 80) + '…' : s.text) + '</td><td>' + escapeHtml(s.classification) + '</td><td>' + escapeHtml(s.actionability) + '</td><td>' + escapeHtml(s.routing_destination) + '</td><td class="text-cell" title="' + escapeHtml(s.summary) + '">' + escapeHtml(s.summary.length > 50 ? s.summary.slice(0, 50) + '…' : s.summary) + '</td><td>' + formatDate(s.created_at) + '</td></tr>').join('');
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        paginationEl.innerHTML = '<span>Page ' + page + ' of ' + totalPages + ' (' + total + ' total)</span>' +
+          (page > 1 ? '<button onclick="loadList(' + (page - 1) + ')">Previous</button>' : '') +
+          (page < totalPages ? '<button onclick="loadList(' + (page + 1) + ')">Next</button>' : '');
+      } catch (e) {
+        listError.textContent = e.message || 'Failed to load';
+        listError.style.display = 'block';
+        body.innerHTML = '';
+      }
+    }
 
     function setPipeline(activeIndex) {
       pipelineEl.innerHTML = steps.map((label, i) => {

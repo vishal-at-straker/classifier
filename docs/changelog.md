@@ -9,3 +9,4 @@ All notable changes to the Content Triage Agent project.
 - Added: setup.sh to install packages and run seed; run.sh now requires .env and checks DATABASE_URL, LITELLM_MODEL (docs/changelog, 2025-03-05)
 - Changed: Input sanitization – strip leading/trailing whitespace and collapse internal spaces for submission text (docs/changelog, 2025-03-05)
 - Changed: POST /submissions handles DB failures gracefully (503, no DB details leaked) (docs/changelog, 2025-03-05)
+- Added: GET /submissions/list with pagination (page, per_page); list CRUD; UI "View submissions" table (descending order) and console /list, /list N for table output (docs/changelog, 2025-03-05)
