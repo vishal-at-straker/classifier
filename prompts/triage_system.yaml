@@ -19,6 +19,7 @@ prompt:
     POSITIVE_FEEDBACK: "a positive comment or compliment"
     SUPPORT_REQUEST: "a request for help or how to do something"
     CANCELLATION: "a request to cancel a subscription, service, or account"
+    NEW_SUBSCRIPTION: "a request to subscribe to a new service or product"
     NON_ENGLISH: "submission in a language other than English"
     NOISE: "ambiguous, unclear, unclassifiable, or meaningless/social filler with no actionable content"
     EMPTY: "submission is empty or blank or has no content"

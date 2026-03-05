@@ -18,6 +18,7 @@ SUBMIT_TRIAGE_RESULT_TOOL = {
                         "POSITIVE_FEEDBACK",
                         "SUPPORT_REQUEST",
                         "CANCELLATION",
+                        "NEW_SUBSCRIPTION",
                         "NON_ENGLISH",
                         "NOISE",
                         "EMPTY",
