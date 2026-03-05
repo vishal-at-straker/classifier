@@ -3,3 +3,4 @@
 **/**/__pycache__/**/*.pyc
 .vscode/**
 .cursor/**
+code/classifier.db
