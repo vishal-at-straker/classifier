@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TRIAGE AGENT</title>
+  <style>
+    :root {
+      --lime: #32CD32;
+      --bg: #1a1a1a;
+      --card: #252525;
+      --text: #e0e0e0;
+      --muted: #888;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 1.5rem;
+      min-height: 100vh;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    header h1 {
+      color: var(--lime);
+      font-size: 1.75rem;
+      letter-spacing: 0.15em;
+      margin: 0;
+    }
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 0.75rem;
+      background: var(--card);
+      border: 1px solid #444;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      resize: vertical;
+    }
+    button {
+      margin-top: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      background: var(--lime);
+      color: var(--bg);
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+    .step {
+      padding: 0.35rem 0.6rem;
+      background: var(--card);
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .step.active {
+      color: var(--lime);
+      border: 1px solid var(--lime);
+    }
+    .step.done {
+      color: #8f8;
+    }
+    .result-box {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      white-space: pre-wrap;
+      font-size: 0.9rem;
+    }
+    .json-box {
+      background: #111;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 0.5rem;
+      overflow-x: auto;
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+    }
+    .error {
+      color: #f88;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TRIAGE AGENT</h1>
+  </header>
+  <div class="container">
+    <textarea id="input" placeholder="Paste or type text to triage…"></textarea>
+    <button id="submit">Submit</button>
+    <div class="pipeline" id="pipeline"></div>
+    <div class="result-box" id="result" style="display:none;"></div>
+    <div class="json-box" id="json" style="display:none;"></div>
+    <div class="error" id="error" style="display:none;"></div>
+  </div>
+  <script>
+    const steps = ['Validating…', 'Idempotency', 'Empty check', 'Dedup', 'LLM', 'Routing', 'Done'];
+    const pipelineEl = document.getElementById('pipeline');
+    const resultEl = document.getElementById('result');
+    const jsonEl = document.getElementById('json');
+    const errorEl = document.getElementById('error');
+
+    function setPipeline(activeIndex) {
+      pipelineEl.innerHTML = steps.map((label, i) => {
+        const done = i < activeIndex;
+        const active = i === activeIndex;
+        let c = 'step';
+        if (done) c += ' done';
+        else if (active) c += ' active';
+        return '<span class="' + c + '">' + label + '</span>';
+      }).join('');
+    }
+
+    document.getElementById('submit').addEventListener('click', async () => {
+      const text = document.getElementById('input').value.trim();
+      if (!text) return;
+      resultEl.style.display = 'none';
+      jsonEl.style.display = 'none';
+      errorEl.style.display = 'none';
+      pipelineEl.innerHTML = '';
+      const btn = document.getElementById('submit');
+      btn.disabled = true;
+
+      for (let i = 0; i <= steps.length; i++) {
+        setPipeline(i);
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      try {
+        const r = await fetch('/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
+        const data = await r.json();
+        if (!r.ok) {
+          errorEl.textContent = data.detail || r.statusText;
+          errorEl.style.display = 'block';
+        } else {
+          const res = data.result || data;
+          resultEl.textContent = [
+            'Classification: ' + (res.classification || ''),
+            'Actionability:  ' + (res.actionability || ''),
+            'Routing:        ' + (res.routing_destination || ''),
+            'Summary:        ' + (res.summary || '')
+          ].join('\n');
+          resultEl.style.display = 'block';
+          jsonEl.textContent = JSON.stringify(data, null, 2);
+          jsonEl.style.display = 'block';
+        }
+      } catch (e) {
+        errorEl.textContent = e.message || 'Request failed';
+        errorEl.style.display = 'block';
+      }
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>
