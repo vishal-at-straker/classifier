@@ -17,7 +17,7 @@ A content triage service that classifies text submissions via an LLM (LiteLLM), 
 
 ## How to run
 
-All steps are from the **`code`** directory. Open a terminal and `cd code` first.
+All steps are from the `**code`** directory. Open a terminal and `cd code` first.
 
 ### Prerequisites
 
@@ -40,12 +40,12 @@ Copy `.env.example` to `.env` and set values (see [Environment variables](#envir
 ```bash
 cd code
 cp .env.example .env
-# Edit .env and set at least DATABASE_URL, LITELLM_MODEL, and LITELLM_API_KEY (or your provider key).
+# Edit .env and set at least LITELLM_MODEL, and LITELLM_API_KEY (or your provider key).
 ```
 
 ### 3. Run
 
-Start the service or the console with the bash script. **`run.sh` checks that `.env` exists and that required env variables are set** (e.g. `DATABASE_URL`, `LITELLM_MODEL`). If not, it exits with an error asking you to update the `.env` file.
+Start the service or the console with the bash script. `**run.sh` checks that `.env` exists and that required env variables are set** (e.g. `DATABASE_URL`, `LITELLM_MODEL`). If not, it exits with an error asking you to update the `.env` file.
 
 ```bash
 cd code
@@ -53,8 +53,8 @@ cd code
 ./run.sh -c    # Run interactive console (prompt for text, pipeline animation, result + JSON)
 ```
 
-- **`./run.sh -u`**: Serves API + Web UI at http://localhost:8000 (pipeline animation, formatted result, JSON; multiple submissions).
-- **`./run.sh -c`**: Interactive TRIAGE AGENT console (lime green banner); multiple submissions; pipeline steps and formatted result + JSON.
+- `**./run.sh -u**`: Serves API + Web UI at [http://localhost:8000](http://localhost:8000) (pipeline animation, formatted result, JSON; multiple submissions).
+- `**./run.sh -c**`: Interactive TRIAGE AGENT console (lime green banner); multiple submissions; pipeline steps and formatted result + JSON.
 - **File mode (`-f`)**: Run manually when you want to triage a file once:
   ```bash
   cd code
@@ -86,21 +86,21 @@ Tests cover: triage agent (tool call, fallback), dedup by normalized text, edge 
 Documented in `.env.example`. Summary:
 
 
-| Variable                    | Description                                                         |
-| --------------------------- | ------------------------------------------------------------------- |
-| `DATABASE_URL`              | SQLite connection string (default: `sqlite:///./classifier.db`)     |
-| `LITELLM_MODEL`             | Model for LiteLLM (e.g. `gpt-4o-mini`)                              |
-| `LITELLM_API_KEY`           | Provider API key (do not commit; use secret manager in prod)        |
-| `LITELLM_API_BASE`          | Optional custom API base URL (e.g. OpenAI-compatible endpoint)      |
-| `CUSTOM_LLM_PROVIDER`       | LiteLLM provider (default: `openai`)                                |
-| `LITELLM_TEMPERATURE`       | Model temperature (default: `0`)                                   |
-| `LITELLM_API_VERSION`       | Optional API version when using custom provider                     |
-| `LOG_LEVEL`                 | e.g. `INFO`, `DEBUG`                                                |
-| `ENVIRONMENT`               | `dev`, `test`, or `prod`                                            |
-| `RATE_LIMIT_REQUESTS`       | Max requests per window (default: 60)                               |
-| `RATE_LIMIT_WINDOW_SECONDS` | Window in seconds (default: 60)                                     |
-| `SUBMISSION_MAX_LENGTH`     | Max submission length (default: 10000)                             |
-| `TEAM_*_URL`                | Optional team API base URLs                                         |
+| Variable                    | Description                                                     |
+| --------------------------- | --------------------------------------------------------------- |
+| `DATABASE_URL`              | SQLite connection string (default: `sqlite:///./classifier.db`) |
+| `LITELLM_MODEL`             | Model for LiteLLM (e.g. `gpt-4o-mini`)                          |
+| `LITELLM_API_KEY`           | Provider API key (do not commit; use secret manager in prod)    |
+| `LITELLM_API_BASE`          | Optional custom API base URL (e.g. OpenAI-compatible endpoint)  |
+| `CUSTOM_LLM_PROVIDER`       | LiteLLM provider (default: `openai`)                            |
+| `LITELLM_TEMPERATURE`       | Model temperature (default: `0`)                                |
+| `LITELLM_API_VERSION`       | Optional API version when using custom provider                 |
+| `LOG_LEVEL`                 | e.g. `INFO`, `DEBUG`                                            |
+| `ENVIRONMENT`               | `dev`, `test`, or `prod`                                        |
+| `RATE_LIMIT_REQUESTS`       | Max requests per window (default: 60)                           |
+| `RATE_LIMIT_WINDOW_SECONDS` | Window in seconds (default: 60)                                 |
+| `SUBMISSION_MAX_LENGTH`     | Max submission length (default: 10000)                          |
+| `TEAM_*_URL`                | Optional team API base URLs                                     |
 
 
 ## API
